@@ -119,11 +119,18 @@ function getConfig(): any {
   };
 }
 
-function getProcessor(config?: any): GitLabDiscoveryProcessor {
+function getProcessor({
+  config,
+  options,
+}: {
+  config?: any;
+  options?: Partial<Parameters<typeof GitLabDiscoveryProcessor.fromConfig>[1]>;
+} = {}): GitLabDiscoveryProcessor {
   return GitLabDiscoveryProcessor.fromConfig(
     new ConfigReader(config || getConfig()),
     {
       logger: getVoidLogger(),
+      ...options,
     },
   );
 }
@@ -338,7 +345,7 @@ describe('GitlabDiscoveryProcessor', () => {
     });
 
     it('can filter based on file existing', async () => {
-      const processor = getProcessor();
+      const processor = getProcessor({ options: { checkFileExistence: true } });
       setupFakeServer(GROUP_PROJECTS_URL, request => {
         if (!request.include_subgroups) {
           throw new Error('include_subgroups should be set');
@@ -438,7 +445,7 @@ describe('GitlabDiscoveryProcessor', () => {
       const config = getConfig();
       config.integrations.gitlab[0].token = 'invalid';
       await expect(
-        getProcessor(config).readLocation(PROJECT_LOCATION, false, _ => {}),
+        getProcessor({ config }).readLocation(PROJECT_LOCATION, false, _ => {}),
       ).rejects.toThrow(/Unauthorized/);
     });
 
@@ -446,7 +453,7 @@ describe('GitlabDiscoveryProcessor', () => {
       const config = getConfig();
       delete config.integrations;
       await expect(
-        getProcessor(config).readLocation(PROJECT_LOCATION, false, _ => {}),
+        getProcessor({ config }).readLocation(PROJECT_LOCATION, false, _ => {}),
       ).rejects.toThrow(/no GitLab integration/);
     });
 
